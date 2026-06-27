@@ -58,6 +58,38 @@ struct SnapSwiftKitTests {
         #expect(FoundationModelsCodeGenerator.stripFences(code) == code)
     }
 
+    @Test("iOS-only modifier lines are dropped for macOS compatibility")
+    func stripPlatformOnlyModifiers() {
+        let code = """
+        TextField("Email", text: $email)
+            .keyboardType(.emailAddress)
+            .autocapitalization(.none)
+            .padding()
+        """
+        let out = FoundationModelsCodeGenerator.stripPlatformOnlyModifiers(in: code)
+        #expect(!out.contains("keyboardType"))
+        #expect(!out.contains("autocapitalization"))
+        #expect(out.contains(".padding()"))
+        #expect(out.contains("TextField"))
+    }
+
+    @Test("Color(hex:) extension is auto-appended when used but undefined")
+    func appendsColorHexExtension() {
+        let code = "import SwiftUI\nstruct V: View { var body: some View { Color(hex: \"#FF0000\") } }"
+        let out = FoundationModelsCodeGenerator.ensureColorHexExtension(in: code)
+        #expect(out.contains("extension Color"))
+        #expect(out.contains("init(hex"))
+    }
+
+    @Test("Color(hex:) extension is not duplicated when already defined")
+    func doesNotDuplicateColorHexExtension() {
+        let code = "import SwiftUI\nextension Color { init(hex: String) { self.init(red: 0, green: 0, blue: 0) } }\nlet x = Color(hex: \"#000\")"
+        let out = FoundationModelsCodeGenerator.ensureColorHexExtension(in: code)
+        // Only the original definition should be present.
+        let occurrences = out.components(separatedBy: "init(hex").count - 1
+        #expect(occurrences == 1)
+    }
+
     // MARK: - Image loading
 
     @Test("Loading a missing file throws imageNotFound")

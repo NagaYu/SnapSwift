@@ -21,15 +21,23 @@ public enum PromptFactory {
     - Reproduce the hierarchy, alignment, spacing, relative font sizes, and colors as faithfully as the \
       data allows. Larger detected font sizes → headings (.title/.headline/.largeTitle); smaller → \
       .body/.caption. Map weights sensibly.
-    - Prefer semantic system colors (.primary, .secondary, Color(.systemBackground)) when a palette color \
-      is close to black/white/gray. For distinct brand colors, use the `Color(hex:)` initializer.
+    - COLORS — this is critical for the code to compile. Use ONLY these color forms:
+        * SwiftUI semantic colors: .primary, .secondary, .accentColor
+        * SwiftUI standard colors: .white, .black, .gray, .blue, .red, .green, .orange, .yellow, .pink, .purple
+        * Custom colors via Color(red:green:blue:) (values 0...1), or Color(hex:) with the extension below.
+      NEVER use UIKit/AppKit names — they do NOT exist on SwiftUI's Color and will fail to compile.
+      Forbidden examples: Color.systemBackground, Color.systemBlue, Color.label, UIColor(...), NSColor(...).
+      A hex color is ONLY ever written as Color(hex: "#F8F8F8"). NEVER write Color(.F8F8F8), Color(0xF8F8F8),
+      or Color(.someHex) — those do not compile.
+      For a screen background, use Color.white, or Color(hex: "#F8F8F8"), not Color.systemBackground.
+    - Use `.ignoresSafeArea()` (not the deprecated `.edgesIgnoringSafeArea(.all)`).
     - If — and only if — you use `Color(hex:)`, append EXACTLY this extension at the very bottom of the file:
 
     extension Color {
         init(hex: String) {
-            let s = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-            var v: UInt64 = 0
-            Scanner(string: s).scanHexInt64(&v)
+            var s = hex
+            if s.hasPrefix("#") { s.removeFirst() }
+            let v = UInt64(s, radix: 16) ?? 0
             self.init(
                 red: Double((v >> 16) & 0xFF) / 255,
                 green: Double((v >> 8) & 0xFF) / 255,
@@ -39,6 +47,15 @@ public enum PromptFactory {
     }
 
     - Use SF Symbols (Image(systemName:)) as stand-ins for icons/glyphs you infer.
+    - STATE & BINDINGS — types must match or it won't compile:
+        * Each TextField / SecureField binds to its OWN `@State private var x: String = ""`.
+        * Toggle binds to a `@State private var x: Bool = false`. Never bind a TextField to a Bool.
+        * A Button takes an action closure `{ }` and a label — it does not need a binding.
+      Declare one correctly-typed @State property per interactive control and bind each to the right one.
+    - CROSS-PLATFORM — the code must compile on macOS. Do NOT use iOS-only modifiers such as
+      .keyboardType, .autocapitalization, .textInputAutocapitalization, or .navigationBarTitleDisplayMode.
+      For a styled Button use `Button("Title") { }` (or `Button(role: .destructive) { } label: { Text("…") }`),
+      never `Button(.destructive)`.
     - Replace any obviously dynamic content with sensible placeholder state (@State) so the file compiles \
       and previews on its own.
     - Always end the file with a `#Preview { RootViewName() }` block.
