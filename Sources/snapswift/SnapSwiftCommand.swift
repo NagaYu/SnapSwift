@@ -35,20 +35,15 @@ struct SnapSwiftCommand: AsyncParsableCommand {
     @Flag(name: [.short, .long], help: "Print analysis details to stderr.")
     var verbose = false
 
+    @Flag(name: .long, help: "Only run the Vision analysis and print the detected layout as JSON (no model needed).")
+    var analyzeOnly = false
+
     func run() async throws {
         let style = TerminalStyle(forced: noColor ? false : nil)
         let url = URL(fileURLWithPath: imagePath)
         let engine = SnapSwiftEngine()
 
-        // 1. Make sure the on-device model can actually run.
-        do {
-            try engine.ensureAvailable()
-        } catch {
-            printError(error.localizedDescription, style: style)
-            throw ExitCode.failure
-        }
-
-        // 2. Load + analyze.
+        // 1. Load + analyze (the Vision stage needs no language model).
         let image: CGImage
         do {
             image = try ImageLoader.load(at: url)
@@ -68,6 +63,23 @@ struct SnapSwiftCommand: AsyncParsableCommand {
 
         if verbose {
             dumpDescription(description, style: style)
+        }
+
+        // 1a. Analyze-only → print the structured UIDescription and stop (works without Apple Intelligence).
+        if analyzeOnly {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(description)
+            print(String(decoding: data, as: UTF8.self))
+            return
+        }
+
+        // 2. The generation stage needs the on-device model — make sure it can run.
+        do {
+            try engine.ensureAvailable()
+        } catch {
+            printError(error.localizedDescription, style: style)
+            throw ExitCode.failure
         }
 
         // 3a. File output → one-shot structured generation (clean, fence-free).

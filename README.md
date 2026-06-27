@@ -81,6 +81,7 @@ swift build -c release
 | `<image>` | Path to the screenshot (`.png`, `.jpg`, `.heic`, `.tiff`) |
 | `-o, --output <file>` | Write SwiftUI to a file instead of the terminal |
 | `--hint <text>` | Extra guidance for the model |
+| `--analyze-only` | Run only the Vision stage and print detected layout as JSON (no model needed) |
 | `-v, --verbose` | Print what Vision detected (to stderr) |
 | `--no-color` | Disable ANSI colors |
 
@@ -202,6 +203,7 @@ swift build -c release
 | `<image>` | スクショのパス（`.png` / `.jpg` / `.heic` / `.tiff`） |
 | `-o, --output <file>` | ターミナルではなくファイルに出力 |
 | `--hint <text>` | モデルへの追加指示 |
+| `--analyze-only` | Vision解析のみ実行し検出レイアウトをJSON出力（モデル不要） |
 | `-v, --verbose` | Vision が検出した内容を表示（stderr） |
 | `--no-color` | ANSIカラーを無効化 |
 
